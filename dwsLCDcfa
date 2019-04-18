@@ -1,0 +1,137 @@
+#!/bin/sh
+#
+#####################################################################
+##
+##            DWS4000 LCD_Mon for Backfire 10.3 @linux2.6
+##
+##            Copyright 2016, by Dasan InfoTek Co.,
+##
+##                         ...jsLee...
+##
+#####################################################################
+
+
+
+pSleep() {
+  cntP1=`expr $1 \* 1`
+  while [ true ]
+  do
+        if [ $cntP1 -gt 0 ] ; then
+                fping -q 127.0.0.1
+        else
+                break
+        fi
+        cntP1=`expr $cntP1 - 1`
+  done
+}
+
+
+
+readCFG() {
+
+cWssid=`uci -q get wireless.@wifi-iface[0].ssid`
+cWencr=`uci -q get wireless.@wifi-iface[0].encryption`
+cWkey=`uci -q get wireless.@wifi-iface[0].key`
+
+cWip=`uci -q get network.wlan.ipaddr`
+cWmask=`uci -q get network.wlan.netmask`
+cWgway=`uci -q get network.wlan.gateway`
+cWdns=`uci -q get network.wlan.dns`
+
+# cLip=`uci show network.lan.ipaddr | cut -d'=' -f2`
+# cLmask=`uci show network.lan.netmask | cut -d'=' -f2`
+
+# cSlogip=`uci show system.@system[0].log_ip | cut -d'=' -f2`
+
+## echo "wSSID=$cWssid $cWencr Key=$cWkey $cWip $cWmask $cWgway $cLip $cLmask $cSlogip $cWdns "
+
+##rSNR=`iwconfig ath0 | grep Link | awk '{print $2}' | cut -d'=' -f2 | cut -d'/' -f1`
+##rFreq=`iwconfig ath0 | grep  Freq  | awk '{ print $2 }' | cut -c11-`
+##rAP=`iwconfig ath0 | grep Freq | awk '{ print $6 }'`
+
+iwconfig ath0 > /tmp/ath0s
+##
+rSNR=`cat /tmp/ath0s | grep Link | awk '{print $2}' | cut -d'=' -f2 | cut -d'/' -f1`
+rFreq=`cat /tmp/ath0s | grep  Freq  | awk '{ print $2 }' | cut -c11-`
+rAP=`cat /tmp/ath0s | grep Freq | awk '{ print $6 }'`
+##
+rSSID=`cat /tmp/ath0s | grep SSID | awk '{print $3" "$4}'`
+
+upTime=`uptime | cut -d',' -f1 | sed 's/^ *//g'`
+upTime=`echo "$upTime        " | cut -c -20`
+
+rDATE=`date +%Y%m%e`
+rDATE="$rDATE $upTime"
+rDATE=`echo "$rDATE" | sed 's/^ *//g' | cut -c -20`
+
+}
+
+
+stty -F /dev/ttyUSB0 115200
+sleep 1
+##
+echo -n -e '\x1B\x43' > /dev/ttyUSB0
+sleep 1
+
+
+cLOOP=0
+
+while [ true ]
+do
+	readCFG
+	
+	pSleep 3  ##2
+
+	cLOOP=`expr $cLOOP + 1`
+	if [ $cLOOP -gt 3 ] ; then
+
+	cLOOP=0
+
+	rAP=`echo $rAP | cut -c 12- `    ## ":C6:C4"  ## Not-Associated : "ciated"
+	###
+	if [ "$rAP" == "ted" ] ; then
+		rAP="Not-AP"
+		rSNR=0
+	fi
+	
+	### <LCD> ###
+	# if [ -f /dev/ttyUSB0 ] ; then
+		## stty -F /dev/ttyS0 9600 clocal cread cs8 -cstopb -parenb
+		
+		## stty -F /dev/ttyUSB0 115200
+		## pSleep 1  ##2
+
+		## echo -n -e '\x66\x6f\x6f' > byteFileForNow
+		## echo -n -e \\x66\\x6f\\x6f > byteFileForNow
+
+		echo -n -e '\x1B\x4C\x00\x00' > /dev/ttyUSB0   ### Locate 0,0
+		echo -n "IP:$cWip" > /dev/ttyUSB0
+		
+		echo -n -e '\x1B\x4C\x00\x01' > /dev/ttyUSB0   ### Locate 0,1
+		echo -n "ID:$cWssid " > /dev/ttyUSB0
+		
+		echo -n -e '\x1B\x4C\x0E\x01' > /dev/ttyUSB0   ### Locate 14,1
+		echo -n "$rAP" > /dev/ttyUSB0
+		
+		echo -n -e '\x1B\x4C\x00\x02' > /dev/ttyUSB0   ### Locate 0,2
+		echo -n "FQ:$rFreq SNR:$rSNR " > /dev/ttyUSB0
+		
+		
+		echo -n -e '\x1B\x4C\x00\x03' > /dev/ttyUSB0
+		echo -n "$upTime" > /dev/ttyUSB0
+		
+		
+		
+		#sleep 1
+		
+	# fi
+
+	fi
+
+done
+
+
+
+### END ###
+
+
