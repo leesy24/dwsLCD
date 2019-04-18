@@ -2,11 +2,11 @@
 #
 #####################################################################
 ##
-##            DWS4000 LCD_Mon for Backfire 10.3 @linux2.6
+##       DWS4000 LCD_Mon for CFA LCD and Backfire 10.3 @linux2.6
 ##
-##            Copyright 2016, by Dasan InfoTek Co.,
+##            Copyright 2018, by Dasan InfoTek Co.,
 ##
-##                         ...jsLee...
+##                      ...jsLee, leesy...
 ##
 #####################################################################
 
@@ -67,12 +67,18 @@ rDATE=`echo "$rDATE" | sed 's/^ *//g' | cut -c -20`
 }
 
 
-stty -F /dev/ttyUSB0 115200
-sleep 1
-##
-echo -n -e '\x1B\x43' > /dev/ttyUSB0
-sleep 1
-
+### Init LCD
+## Set keypad backlight off
+cfa_send /dev/ttyUSB0 "\x0e\d002\d100\d000"
+## Clear LCD
+cfa_send /dev/ttyUSB0 "\x06\d000"
+## Display splash strings
+cfa_send /dev/ttyUSB0 "\x1f\d022\d000\d000DASAN InfoTek       "
+cfa_send /dev/ttyUSB0 "\x1f\d022\d000\d001                    "
+cfa_send /dev/ttyUSB0 "\x1f\d022\d000\d002                    "
+cfa_send /dev/ttyUSB0 "\x1f\d022\d000\d003   www.dsintek.co.kr"
+## Store current state as boot state
+cfa_send /dev/ttyUSB0 "\x04\d000"
 
 cLOOP=0
 
@@ -101,26 +107,15 @@ do
 		## stty -F /dev/ttyUSB0 115200
 		## pSleep 1  ##2
 
-		## echo -n -e '\x66\x6f\x6f' > byteFileForNow
-		## echo -n -e \\x66\\x6f\\x6f > byteFileForNow
-
-		echo -n -e '\x1B\x4C\x00\x00' > /dev/ttyUSB0   ### Locate 0,0
-		echo -n "IP:$cWip" > /dev/ttyUSB0
+		cfa_send /dev/ttyUSB0 "\x1f\d022\d000\d000IP:$cWip                    "   ### Locate 0,0
 		
-		echo -n -e '\x1B\x4C\x00\x01' > /dev/ttyUSB0   ### Locate 0,1
-		echo -n "ID:$cWssid " > /dev/ttyUSB0
+		cfa_send /dev/ttyUSB0 "\x1f\d016\d000\d001ID:$cWssid              "   ### Locate 0,1
 		
-		echo -n -e '\x1B\x4C\x0E\x01' > /dev/ttyUSB0   ### Locate 14,1
-		echo -n "$rAP" > /dev/ttyUSB0
+		cfa_send /dev/ttyUSB0 "\x1f\d008\d014\d001$rAP      "   ### Locate 14,1
 		
-		echo -n -e '\x1B\x4C\x00\x02' > /dev/ttyUSB0   ### Locate 0,2
-		echo -n "FQ:$rFreq SNR:$rSNR " > /dev/ttyUSB0
+		cfa_send /dev/ttyUSB0 "\x1f\d022\d000\d002FQ:$rFreq SNR:$rSNR                    "   ### Locate 0,2
 		
-		
-		echo -n -e '\x1B\x4C\x00\x03' > /dev/ttyUSB0
-		echo -n "$upTime" > /dev/ttyUSB0
-		
-		
+		cfa_send /dev/ttyUSB0 "\x1f\d022\d000\d003$upTime                    "   ### Locate 0,3
 		
 		#sleep 1
 		
